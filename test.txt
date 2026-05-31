@@ -1,0 +1,9 @@
+This is just a test file to test changes.
+
+- Run HostSentinel
+- Check the /integrity page of HostSentinel 
+- Change the below word which will change this file:
+
+Word To Change: Changed!
+
+- Check the /integrity page of HostSentinel and see the warning for test.txt.

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Reset Data – HostSentinel{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-4">
+  <div class="col-12 col-md-6 col-lg-5">
+
+    <div class="hs-card" style="border-color: var(--hs-red);">
+      <div class="hs-card-header" style="color: var(--hs-red); background: rgba(248,81,73,.08);">
+        <i class="bi bi-exclamation-triangle-fill me-1"></i> RESET ALL DATA
+      </div>
+      <div class="hs-card-body">
+
+        <p class="mb-3" style="color: #ffb0ac;">
+          This permanently deletes every event, attacker profile, honeypot log,
+          and file integrity baseline. The database structure is preserved —
+          monitoring resumes immediately after the reset.
+        </p>
+
+        <!-- What will be deleted -->
+        <table class="table hs-table mb-4" style="font-size:.85rem;">
+          <thead>
+            <tr><th>Table</th><th class="text-end">Records</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><i class="bi bi-list-ul me-1 text-muted"></i>Events</td>
+              <td class="text-end font-mono">{{ counts.events or 0 }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-person-exclamation me-1 text-muted"></i>Attackers</td>
+              <td class="text-end font-mono">{{ counts.attackers or 0 }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-bug me-1 text-muted"></i>Honeypot hits</td>
+              <td class="text-end font-mono">{{ counts.honeypot_hits or 0 }}</td>
+            </tr>
+            <tr>
+              <td><i class="bi bi-file-lock2 me-1 text-muted"></i>Integrity baselines</td>
+              <td class="text-end font-mono">{{ counts.integrity or 0 }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }} py-2 small mb-3">{{ msg }}</div>
+          {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <div class="mb-3">
+            <label class="form-label small text-muted">
+              Type <code>RESET</code> to confirm
+            </label>
+            <input type="text" name="confirm" class="form-control"
+                   placeholder="RESET" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-trash3 me-1"></i> Reset All Data
+            </button>
+            <a href="/" class="btn btn-outline-secondary">Cancel</a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

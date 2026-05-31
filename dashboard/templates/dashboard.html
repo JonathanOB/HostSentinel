@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – HostSentinel{% endblock %}
+
+{% block content %}
+<!-- Stat cards -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-info">
+      <div class="stat-icon text-info"><i class="bi bi-calendar-day"></i></div>
+      <div>
+        <div class="stat-value" id="stat-events_today">{{ stats.events_today or 0 }}</div>
+        <div class="stat-label">Events Today</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-danger">
+      <div class="stat-icon text-danger"><i class="bi bi-shield-x"></i></div>
+      <div>
+        <div class="stat-value" id="stat-brute_force_today">{{ stats.brute_force_today or 0 }}</div>
+        <div class="stat-label">Brute Force Today</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-warning">
+      <div class="stat-icon text-warning"><i class="bi bi-bug"></i></div>
+      <div>
+        <div class="stat-value" id="stat-honeypot_today">{{ stats.honeypot_today or 0 }}</div>
+        <div class="stat-label">Honeypot Hits Today</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-purple">
+      <div class="stat-icon" style="color:var(--hs-purple)"><i class="bi bi-person-exclamation"></i></div>
+      <div>
+        <div class="stat-value" id="stat-unique_attackers">{{ stats.unique_attackers or 0 }}</div>
+        <div class="stat-label">Unique Attackers</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Second row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-secondary">
+      <div class="stat-icon text-secondary"><i class="bi bi-bar-chart-line"></i></div>
+      <div>
+        <div class="stat-value" id="stat-total_events">{{ stats.total_events or 0 }}</div>
+        <div class="stat-label">Total Events</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-danger">
+      <div class="stat-icon text-danger"><i class="bi bi-exclamation-triangle"></i></div>
+      <div>
+        <div class="stat-value text-danger" id="stat-critical_unacked">{{ stats.critical_unacked or 0 }}</div>
+        <div class="stat-label">Unacked Critical</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-info">
+      <div class="stat-icon text-info"><i class="bi bi-file-diff"></i></div>
+      <div>
+        <div class="stat-value" id="stat-file_changes">{{ stats.file_changes or 0 }}</div>
+        <div class="stat-label">File Changes</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card border-warning">
+      <div class="stat-icon text-warning"><i class="bi bi-bug-fill"></i></div>
+      <div>
+        <div class="stat-value" id="stat-honeypot_total">{{ stats.honeypot_total or 0 }}</div>
+        <div class="stat-label">Honeypot Total</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-xl-8">
+    <div class="hs-card h-100">
+      <div class="hs-card-header">
+        <i class="bi bi-graph-up"></i> Events – Last 24 Hours
+      </div>
+      <div class="hs-card-body">
+        <canvas id="timelineChart" style="max-height:240px"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-4">
+    <div class="hs-card h-100">
+      <div class="hs-card-header">
+        <i class="bi bi-pie-chart"></i> Event Types
+      </div>
+      <div class="hs-card-body d-flex align-items-center justify-content-center">
+        <canvas id="typeChart" style="max-height:240px;max-width:240px"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tables -->
+<div class="row g-3">
+  <div class="col-12 col-xl-7">
+    <div class="hs-card">
+      <div class="hs-card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history"></i> Recent Events</span>
+        <a href="/events" class="btn btn-sm btn-outline-secondary">View All</a>
+      </div>
+      <div class="hs-card-body p-0">
+        <div class="table-responsive">
+          <table class="table hs-table mb-0" id="live-feed-table">
+            <thead>
+              <tr>
+                <th>Time</th><th>Type</th><th>Sev</th><th>IP</th><th>Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for ev in recent_events %}
+              <tr>
+                <td class="text-muted font-mono small">{{ ev.timestamp[:16] }}</td>
+                <td>{{ ev.event_type | replace('_',' ') }}</td>
+                <td><span class="badge sev-{{ ev.severity | lower }}">{{ ev.severity }}</span></td>
+                <td>
+                  {% if ev.source_ip %}
+                  <a href="/attacker/{{ ev.source_ip }}" class="font-mono text-info small">{{ ev.source_ip }}</a>
+                  {% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td class="small text-truncate" style="max-width:220px">{{ ev.details or '—' }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-3">No events yet</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-5">
+    <div class="hs-card">
+      <div class="hs-card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-trophy"></i> Top Attackers</span>
+        <a href="/attackers" class="btn btn-sm btn-outline-secondary">View All</a>
+      </div>
+      <div class="hs-card-body p-0">
+        <div class="table-responsive">
+          <table class="table hs-table mb-0">
+            <thead>
+              <tr><th>IP</th><th>Country</th><th>Events</th><th>Score</th></tr>
+            </thead>
+            <tbody>
+              {% for a in top_attackers %}
+              <tr>
+                <td><a href="/attacker/{{ a.ip }}" class="font-mono text-info">{{ a.ip }}</a></td>
+                <td>
+                  {% if a.country_code %}
+                  <span class="flag-text">{{ a.country_code }}</span>
+                  {% endif %}
+                  <span class="small text-muted">{{ a.country or '?' }}</span>
+                </td>
+                <td>{{ a.event_count }}</td>
+                <td>
+                  <div class="threat-bar">
+                    <div class="threat-fill" style="width:{{ a.threat_score }}%"></div>
+                    <span>{{ a.threat_score }}</span>
+                  </div>
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4" class="text-center text-muted py-3">No attackers yet</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Timeline chart
+async function initCharts() {
+  const raw = await fetch('/api/chart?hours=24').then(r => r.json());
+
+  // Build hours axis
+  const now = new Date();
+  const labels = [];
+  for (let i = 23; i >= 0; i--) {
+    const d = new Date(now - i * 3600000);
+    labels.push(d.getHours().toString().padStart(2,'0') + ':00');
+  }
+
+  const typeColors = {
+    BRUTE_FORCE: '#da3633', FAILED_SSH: '#e3b341',
+    HONEYPOT_SSH: '#8957e5', HONEYPOT_HTTP: '#fd7e14',
+    FILE_MODIFIED: '#3fb950', SUCCESSFUL_SSH: '#58a6ff',
+    SUDO_COMMAND: '#6e7681', NEW_USER: '#ff6b6b',
+  };
+
+  // Aggregate by hour and type
+  const datasets = {};
+  raw.forEach(r => {
+    if (!datasets[r.event_type]) {
+      datasets[r.event_type] = new Array(24).fill(0);
+    }
+    const h = new Date(r.hour + 'Z').getHours();
+    const idx = labels.findIndex(l => l === h.toString().padStart(2,'0') + ':00');
+    if (idx >= 0) datasets[r.event_type][idx] += r.count;
+  });
+
+  const dsArr = Object.entries(datasets).map(([type, data]) => ({
+    label: type.replace(/_/g,' '),
+    data,
+    borderColor: typeColors[type] || '#58a6ff',
+    backgroundColor: (typeColors[type] || '#58a6ff') + '22',
+    fill: true,
+    tension: 0.3,
+    pointRadius: 2,
+  }));
+
+  new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: { labels, datasets: dsArr },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: { legend: { labels: { color: '#8b949e', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#8b949e', maxTicksLimit: 8 }, grid: { color: '#21262d' } },
+        y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' }, beginAtZero: true },
+      }
+    }
+  });
+
+  // Donut
+  const typeTotals = {};
+  raw.forEach(r => { typeTotals[r.event_type] = (typeTotals[r.event_type] || 0) + r.count; });
+  const typeLabels = Object.keys(typeTotals);
+  const typeData   = Object.values(typeTotals);
+  const typeColArr = typeLabels.map(t => typeColors[t] || '#58a6ff');
+
+  new Chart(document.getElementById('typeChart'), {
+    type: 'doughnut',
+    data: {
+      labels: typeLabels.map(l => l.replace(/_/g,' ')),
+      datasets: [{ data: typeData, backgroundColor: typeColArr, borderWidth: 1 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 11 }, padding: 10 } }
+      }
+    }
+  });
+}
+initCharts();
+
+// Live feed
+window.updateEventFeed = function(evt) {
+  const tbody = document.querySelector('#live-feed-table tbody');
+  const sev = evt.severity || 'INFO';
+  const row = `<tr class="new-row">
+    <td class="text-muted font-mono small">${new Date().toISOString().slice(0,16).replace('T',' ')}</td>
+    <td>${(evt.event_type||'').replace(/_/g,' ')}</td>
+    <td><span class="badge sev-${sev.toLowerCase()}">${sev}</span></td>
+    <td>${evt.source_ip ? `<a href="/attacker/${evt.source_ip}" class="font-mono text-info small">${evt.source_ip}</a>` : '<span class="text-muted">—</span>'}</td>
+    <td class="small text-truncate" style="max-width:220px">${(evt.details||'').substring(0,80)}</td>
+  </tr>`;
+  tbody.insertAdjacentHTML('afterbegin', row);
+  // Keep max 15 rows
+  while (tbody.rows.length > 15) tbody.deleteRow(tbody.rows.length - 1);
+};
+</script>
+{% endblock %}

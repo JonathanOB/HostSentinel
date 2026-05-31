@@ -26,6 +26,11 @@ share/python-wheels/
 *.egg
 MANIFEST
 buildnotes.md
+data/*.db
+data/*.db-*
+logs/*.log
+!data/.gitkeep
+!logs/.gitkeep
 
 # PyInstaller
 #   Usually these files are written by a python script from a template

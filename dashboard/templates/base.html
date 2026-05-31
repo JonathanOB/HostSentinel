@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}HostSentinel{% endblock %}</title>
+  <link rel="stylesheet" href="/static/vendor/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/vendor/css/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<nav class="navbar navbar-expand-lg">
+  <div class="container-fluid px-4">
+    <a class="navbar-brand" href="/">
+      <i class="bi bi-shield-fill-check text-success"></i>
+      <span class="ms-1 fw-bold">HostSentinel</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav me-auto gap-1">
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}" href="/">
+            <i class="bi bi-speedometer2"></i> Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'dashboard.events' %}active{% endif %}" href="/events">
+            <i class="bi bi-list-ul"></i> Events
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if 'attacker' in (request.endpoint or '') %}active{% endif %}" href="/attackers">
+            <i class="bi bi-person-exclamation"></i> Attackers
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'dashboard.honeypot' %}active{% endif %}" href="/honeypot">
+            <i class="bi bi-bug"></i> Honeypot
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'dashboard.integrity' %}active{% endif %}" href="/integrity">
+            <i class="bi bi-file-lock2"></i> Integrity
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if request.endpoint == 'dashboard.ports' %}active{% endif %}" href="/ports">
+            <i class="bi bi-ethernet"></i> Ports
+          </a>
+        </li>
+      </ul>
+      <div class="d-flex align-items-center gap-3">
+        <span id="live-badge" class="badge bg-success-subtle text-success-emphasis border border-success-subtle">
+          <i class="bi bi-circle-fill" style="font-size:.5rem;vertical-align:middle"></i> LIVE
+        </span>
+        <a href="/reset" class="btn btn-sm btn-outline-danger" title="Reset all data">
+          <i class="bi bi-trash3"></i>
+        </a>
+        <a href="/logout" class="btn btn-sm btn-outline-secondary">
+          <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+{% endif %}
+
+<div class="container-fluid px-4 py-3">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="alert alert-{{ cat }} alert-dismissible fade show py-2" role="alert">
+      {{ msg }}
+      <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</div>
+
+<div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index:1100"></div>
+
+<script src="/static/vendor/js/bootstrap.bundle.min.js"></script>
+<script src="/static/vendor/js/chart.umd.min.js"></script>
+<script src="/static/js/main.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

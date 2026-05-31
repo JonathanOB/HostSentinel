@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}File Integrity – HostSentinel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0"><i class="bi bi-file-lock2 me-2"></i>File Integrity Monitor</h5>
+  <span class="badge bg-secondary">{{ files | length }} watched files</span>
+</div>
+
+{% set changed = files | selectattr('status', 'equalto', 'CHANGED') | list %}
+<div id="changed-banner" class="alert alert-danger d-flex align-items-center gap-2 mb-3"
+     {% if not changed %}style="display:none!important"{% endif %}>
+  <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+  <strong><span id="changed-count">{{ changed | length }}</span> file(s) modified since baseline!</strong>
+  <span id="changed-list">{% for f in changed %}<code class="ms-2">{{ f.path }}</code>{% endfor %}</span>
+</div>
+
+<div class="hs-card">
+  <div class="hs-card-body p-0">
+    <div class="table-responsive">
+      <table class="table hs-table mb-0" id="integrity-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>File Path</th>
+            <th>SHA-256 (baseline)</th>
+            <th>Size</th>
+            <th>Baseline Set</th>
+            <th>Last Checked</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in files %}
+          <tr {% if f.status == 'CHANGED' %}class="row-alert"{% endif %}>
+            <td>
+              {% if f.status == 'CHANGED' %}
+              <span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>CHANGED</span>
+              {% elif f.hash in ('PERMISSION_DENIED', 'NOT_FOUND', 'ERROR') %}
+              <span class="badge bg-warning text-dark"><i class="bi bi-question-circle me-1"></i>{{ f.hash }}</span>
+              {% else %}
+              <span class="badge bg-success"><i class="bi bi-check me-1"></i>OK</span>
+              {% endif %}
+            </td>
+            <td class="font-mono small">{{ f.path }}</td>
+            <td class="font-mono small text-muted">
+              {% if f.hash and f.hash not in ('PERMISSION_DENIED', 'NOT_FOUND', 'ERROR') %}
+              {{ f.hash[:12] }}…{{ f.hash[-8:] }}
+              {% else %}
+              <span class="text-warning">{{ f.hash or '—' }}</span>
+              {% endif %}
+            </td>
+            <td class="small text-muted">
+              {% if f.size %}{{ f.size | filesizeformat }}{% else %}—{% endif %}
+            </td>
+            <td class="small text-muted text-nowrap">{{ (f.baseline_established or '')[:16] }}</td>
+            <td class="small text-muted text-nowrap">{{ (f.last_checked or '')[:16] }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-4">
+              <i class="bi bi-file-lock2 fs-2 d-block mb-2 opacity-25"></i>
+              No files tracked yet — start the service to establish baselines
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="mt-3 small text-muted d-flex align-items-center gap-2">
+  <i class="bi bi-info-circle"></i>
+  Baselines established on first run. Re-checked every 30 seconds.
+  Configure watched paths in <code>config.yaml</code> under <code>monitoring.watched_files</code>.
+  <span id="integrity-updated" class="ms-auto opacity-50"></span>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+window.refreshIntegrity = async function() {
+  try {
+    const files = await fetch('/api/integrity').then(r => r.json());
+    const tbody = document.querySelector('#integrity-table tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = files.map(f => {
+      let statusCell;
+      if (f.status === 'CHANGED') {
+        statusCell = `<span class="badge bg-danger"><i class="bi bi-exclamation-triangle me-1"></i>CHANGED</span>`;
+      } else if (['PERMISSION_DENIED','NOT_FOUND','ERROR'].includes(f.hash)) {
+        statusCell = `<span class="badge bg-warning text-dark"><i class="bi bi-question-circle me-1"></i>${f.hash}</span>`;
+      } else {
+        statusCell = `<span class="badge bg-success"><i class="bi bi-check me-1"></i>OK</span>`;
+      }
+      const hashDisplay = (f.hash && !['PERMISSION_DENIED','NOT_FOUND','ERROR'].includes(f.hash))
+        ? `<span class="text-muted">${f.hash.slice(0,12)}…${f.hash.slice(-8)}</span>`
+        : `<span class="text-warning">${f.hash || '—'}</span>`;
+      return `<tr${f.status === 'CHANGED' ? ' class="row-alert"' : ''}>
+        <td>${statusCell}</td>
+        <td class="font-mono small">${f.path}</td>
+        <td class="font-mono small">${hashDisplay}</td>
+        <td class="small text-muted">${f.size ? f.size + ' B' : '—'}</td>
+        <td class="small text-muted text-nowrap">${(f.baseline_established || '').slice(0,16)}</td>
+        <td class="small text-muted text-nowrap">${(f.last_checked || '').slice(0,16)}</td>
+      </tr>`;
+    }).join('') || `<tr><td colspan="6" class="text-center text-muted py-4">No files tracked yet</td></tr>`;
+
+    const ts = document.getElementById('integrity-updated');
+    if (ts) ts.textContent = 'Updated ' + new Date().toLocaleTimeString();
+
+    // refresh the alert banner too
+    const changed = files.filter(f => f.status === 'CHANGED');
+    const banner = document.getElementById('changed-banner');
+    if (banner) {
+      banner.style.display = changed.length ? '' : 'none';
+      const list = banner.querySelector('#changed-list');
+      if (list) list.textContent = changed.map(f => f.path).join(', ');
+      const count = banner.querySelector('#changed-count');
+      if (count) count.textContent = changed.length;
+    }
+  } catch(e) { /* swallow */ }
+};
+
+// Poll every 30s (aligned with monitor cycle) + call immediately on load
+setInterval(window.refreshIntegrity, 30000);
+window.refreshIntegrity();
+</script>
+{% endblock %}
