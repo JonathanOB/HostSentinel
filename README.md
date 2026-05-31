@@ -1,4 +1,5 @@
 # HostSentinel
+![banner_image](./img/HostSentinel.jpg)
 
 A lightweight, production-ready Intrusion Detection System for Linux VPS servers.
 Built with Python 3.11+ and Flask. No ML, no heavy dependencies — just clean,
