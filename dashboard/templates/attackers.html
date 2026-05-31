@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Attackers – HostSentinel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">
+    <i class="bi bi-person-exclamation me-2"></i>Attacker Intelligence
+    <span class="badge bg-secondary ms-2">{{ attackers | length }}</span>
+  </h5>
+</div>
+
+<div class="hs-card">
+  <div class="hs-card-body p-0">
+    <div class="table-responsive">
+      <table class="table hs-table mb-0" id="attackers-table">
+        <thead>
+          <tr>
+            <th>IP Address</th>
+            <th>Country</th>
+            <th>Organisation</th>
+            <th>Hostname</th>
+            <th>Events</th>
+            <th>Threat</th>
+            <th>First Seen</th>
+            <th>Last Seen</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in attackers %}
+          <tr>
+            <td>
+              <a href="/attacker/{{ a.ip }}" class="font-mono text-info fw-semibold">{{ a.ip }}</a>
+              {% if a.is_blocked %}
+              <span class="badge bg-danger ms-1" title="Blocked">BLOCKED</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if a.country_code %}
+              <span class="me-1 opacity-75 small">{{ a.country_code }}</span>
+              {% endif %}
+              <span class="small">{{ a.country or '—' }}</span>
+              {% if a.city %}
+              <span class="text-muted small">, {{ a.city }}</span>
+              {% endif %}
+            </td>
+            <td class="small text-truncate" style="max-width:180px">{{ a.org or '—' }}</td>
+            <td class="font-mono small text-truncate" style="max-width:160px">{{ a.hostname or '—' }}</td>
+            <td>
+              <span class="badge bg-secondary">{{ a.event_count }}</span>
+            </td>
+            <td style="min-width:100px">
+              <div class="threat-bar">
+                <div class="threat-fill {% if a.threat_score >= 70 %}high{% elif a.threat_score >= 40 %}med{% endif %}"
+                     style="width:{{ a.threat_score }}%"></div>
+                <span>{{ a.threat_score }}</span>
+              </div>
+            </td>
+            <td class="small text-muted text-nowrap">{{ (a.first_seen or '')[:10] }}</td>
+            <td class="small text-muted text-nowrap">{{ (a.last_seen or '')[:10] }}</td>
+            <td>
+              <a href="/attacker/{{ a.ip }}" class="btn btn-xs btn-outline-info" title="Profile">
+                <i class="bi bi-person-lines-fill"></i>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="9" class="text-center text-muted py-4">
+              <i class="bi bi-people fs-2 d-block mb-2 opacity-25"></i>
+              No attackers recorded
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Client-side search
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.createElement('input');
+  input.className = 'form-control form-control-sm mb-3';
+  input.placeholder = 'Search attackers…';
+  document.querySelector('.hs-card').insertAdjacentElement('beforebegin', input);
+  input.addEventListener('input', () => {
+    const q = input.value.toLowerCase();
+    document.querySelectorAll('#attackers-table tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  });
+});
+</script>
+{% endblock %}

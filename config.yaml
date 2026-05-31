@@ -1,0 +1,85 @@
+sentinel:
+  host: "0.0.0.0"
+  port: 5000
+  debug: false
+  secret_key: "1234-5678-9012-3456"  # Change this in production!
+
+auth:
+  username: "admin"
+  password: "admin"  # Change this in production!
+
+database:
+  path: "data/events.db"
+
+logging:
+  path: "logs/sentinel.log"
+  level: "INFO"
+
+monitoring:
+  auth_log: "/var/log/auth.log"
+  use_journalctl: false
+  brute_force_threshold: 6
+  brute_force_window: 60  # seconds
+
+  watched_files:
+    - "/etc/passwd"
+    - "/etc/shadow"
+    - "/etc/sudoers"
+    - "/etc/ssh/sshd_config"
+    - "/etc/hosts"
+    - "/etc/crontab"
+    - "/root/.ssh/authorized_keys"
+    - "./test.txt"  # Example file for testing
+
+# Alerting configuration for email and Discord notifications.
+alerts:
+  email:
+    enabled: false
+    smtp_host: "smtp.gmail.com"
+    smtp_port: 587
+    username: ""
+    password: ""
+    from_addr: ""
+    to_addr: ""
+
+  discord:
+    enabled: false
+    webhook_url: ""
+
+honeypot:
+  enabled: true
+
+  ssh:
+    enabled: true
+    port: 2222
+    banner: "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.6"
+    # Tarpit: delay responses to slow down scanners (seconds)
+    tarpit_delay: 2
+
+  http:
+    enabled: true
+    trap_paths:
+      - "/admin"
+      - "/wp-admin"
+      - "/wp-login.php"
+      - "/phpmyadmin"
+      - "/.env"
+      - "/config.php"
+      - "/backup"
+      - "/shell"
+      - "/cmd"
+      - "/.git/config"
+      - "/xmlrpc.php"
+      - "/cgi-bin/luci"
+
+port_monitor:
+  enabled: true
+  interval: 30  # seconds between scans
+
+intelligence:
+  geoip:
+    enabled: true
+  reverse_dns:
+    enabled: true
+  whois:
+    enabled: true

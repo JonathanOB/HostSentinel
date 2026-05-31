@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Honeypot – HostSentinel{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0"><i class="bi bi-bug me-2"></i>Honeypot Monitor</h5>
+</div>
+
+<!-- Status cards -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="hs-card">
+      <div class="hs-card-header"><i class="bi bi-terminal"></i> SSH Honeypot</div>
+      <div class="hs-card-body">
+        <div class="d-flex align-items-center gap-3">
+          {% if config.honeypot.ssh.enabled %}
+          <span class="pulse-dot"></span>
+          <div>
+            <div class="fw-semibold text-success">Active</div>
+            <div class="small text-muted">Port {{ config.honeypot.ssh.port }}</div>
+            <div class="font-mono small text-muted mt-1">{{ config.honeypot.ssh.banner }}</div>
+          </div>
+          {% else %}
+          <i class="bi bi-x-circle text-danger fs-4"></i>
+          <div class="text-muted">Disabled</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="hs-card">
+      <div class="hs-card-header"><i class="bi bi-globe2"></i> HTTP Traps</div>
+      <div class="hs-card-body">
+        {% if config.honeypot.http.enabled %}
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span class="pulse-dot"></span>
+          <span class="text-success fw-semibold">Active</span>
+          <span class="badge bg-secondary">{{ config.honeypot.http.trap_paths | length }} paths</span>
+        </div>
+        <div class="d-flex flex-wrap gap-1">
+          {% for p in config.honeypot.http.trap_paths %}
+          <code class="small">{{ p }}</code>
+          {% endfor %}
+        </div>
+        {% else %}
+        <span class="text-muted">Disabled</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="hs-card">
+      <div class="hs-card-header"><i class="bi bi-bar-chart"></i> Stats</div>
+      <div class="hs-card-body">
+        {% for s in hp_stats %}
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="small text-muted">{{ s.honeypot_type }}</span>
+          <span>
+            <span class="badge bg-secondary me-1">{{ s.count }} hits</span>
+            <span class="badge bg-dark border border-secondary">{{ s.unique_ips }} IPs</span>
+          </span>
+        </div>
+        {% else %}
+        <span class="text-muted small">No hits yet</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hits table -->
+<div class="hs-card">
+  <div class="hs-card-header d-flex justify-content-between">
+    <span><i class="bi bi-list-ul"></i> Recent Honeypot Hits
+      <span class="badge bg-secondary ms-2">{{ total }}</span>
+    </span>
+  </div>
+  <div class="hs-card-body p-0">
+    <div class="table-responsive">
+      <table class="table hs-table mb-0">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Source IP</th>
+            <th>Path / Port</th>
+            <th>Method</th>
+            <th>User Agent</th>
+            <th>Credentials</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in hits %}
+          <tr {% if h.credentials_attempted and h.credentials_attempted != 'null' %}class="row-alert"{% endif %}>
+            <td class="font-mono small text-muted text-nowrap">{{ h.timestamp[:19] }}</td>
+            <td>
+              <span class="badge {% if h.honeypot_type == 'SSH' %}bg-purple{% else %}bg-warning text-dark{% endif %}">
+                {{ h.honeypot_type }}
+              </span>
+            </td>
+            <td>
+              {% if h.source_ip %}
+              <a href="/attacker/{{ h.source_ip }}" class="font-mono text-info">{{ h.source_ip }}</a>
+              {% else %}—{% endif %}
+            </td>
+            <td class="font-mono small">{{ h.path or h.source_port or '—' }}</td>
+            <td>
+              {% if h.method %}
+              <span class="badge {% if h.method == 'POST' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                {{ h.method }}
+              </span>
+              {% else %}—{% endif %}
+            </td>
+            <td class="small text-truncate" style="max-width:180px"
+                title="{{ h.user_agent or '' }}">{{ (h.user_agent or '—')[:40] }}</td>
+            <td>
+              {% if h.credentials_attempted and h.credentials_attempted != 'null' %}
+              <span class="badge bg-danger">
+                <i class="bi bi-key me-1"></i>CAPTURED
+              </span>
+              {% else %}
+              <span class="text-muted">—</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted py-4">
+              <i class="bi bi-bug fs-2 d-block mb-2 opacity-25"></i>
+              No honeypot hits yet
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+[Unit]
+Description=HostSentinel Intrusion Detection System
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hostsentinel
+Group=hostsentinel
+WorkingDirectory=/opt/hostsentinel
+ExecStart=/opt/hostsentinel/venv/bin/gunicorn \
+    --workers 1 \
+    --threads 8 \
+    --bind 0.0.0.0:5000 \
+    --timeout 120 \
+    --access-logfile /opt/hostsentinel/logs/access.log \
+    "wsgi:app"
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Allow reading system logs
+SupplementaryGroups=adm
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/hostsentinel/data /opt/hostsentinel/logs
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

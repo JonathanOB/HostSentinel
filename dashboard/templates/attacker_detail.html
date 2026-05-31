@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}{{ attacker.ip }} – HostSentinel{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+  <a href="/attackers" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left"></i>
+  </a>
+  <div>
+    <h4 class="mb-0 font-mono">{{ attacker.ip }}</h4>
+    <small class="text-muted">
+      {% if attacker.country %}{{ attacker.country }}{% if attacker.city %}, {{ attacker.city }}{% endif %}{% endif %}
+      {% if attacker.org %} · {{ attacker.org }}{% endif %}
+    </small>
+  </div>
+  <div class="ms-auto d-flex gap-2 flex-wrap">
+    {% if attacker.is_blocked %}
+    <span class="badge bg-danger fs-6 py-2 px-3">BLOCKED</span>
+    {% endif %}
+    <span class="badge bg-secondary fs-6 py-2 px-3">
+      Threat Score: {{ attacker.threat_score }}/100
+    </span>
+  </div>
+</div>
+
+<!-- Stat row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card border-secondary">
+      <div class="stat-icon text-secondary"><i class="bi bi-bar-chart"></i></div>
+      <div>
+        <div class="stat-value">{{ attacker.event_count }}</div>
+        <div class="stat-label">Total Events</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card border-warning">
+      <div class="stat-icon text-warning"><i class="bi bi-bug"></i></div>
+      <div>
+        <div class="stat-value">{{ honeypot_hits | length }}</div>
+        <div class="stat-label">Honeypot Hits</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card border-info">
+      <div class="stat-icon text-info"><i class="bi bi-calendar-plus"></i></div>
+      <div>
+        <div class="stat-value small">{{ (attacker.first_seen or '')[:10] or '—' }}</div>
+        <div class="stat-label">First Seen</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card border-info">
+      <div class="stat-icon text-info"><i class="bi bi-calendar-check"></i></div>
+      <div>
+        <div class="stat-value small">{{ (attacker.last_seen or '')[:10] or '—' }}</div>
+        <div class="stat-label">Last Seen</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- Intelligence card -->
+  <div class="col-12 col-xl-4">
+    <div class="hs-card h-100">
+      <div class="hs-card-header"><i class="bi bi-binoculars"></i> Intelligence</div>
+      <div class="hs-card-body">
+        <table class="table table-sm hs-table mb-0">
+          <tbody>
+            <tr><td class="text-muted small">IP</td><td class="font-mono">{{ attacker.ip }}</td></tr>
+            <tr><td class="text-muted small">Country</td><td>{{ attacker.country or '—' }}</td></tr>
+            <tr><td class="text-muted small">City</td><td>{{ attacker.city or '—' }}</td></tr>
+            <tr><td class="text-muted small">Org / ISP</td><td class="small">{{ attacker.org or '—' }}</td></tr>
+            <tr><td class="text-muted small">Hostname</td>
+                <td class="font-mono small text-truncate" style="max-width:180px">{{ attacker.hostname or '—' }}</td></tr>
+          </tbody>
+        </table>
+        {% if attacker.whois_summary %}
+        <div class="mt-3">
+          <div class="text-muted small mb-1">WHOIS Summary</div>
+          <pre class="code-block small">{{ attacker.whois_summary }}</pre>
+        </div>
+        {% endif %}
+        {% if attacker.notes %}
+        <div class="mt-3">
+          <div class="text-muted small mb-1">Notes</div>
+          <p class="small">{{ attacker.notes }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Honeypot hits -->
+  <div class="col-12 col-xl-8">
+    <div class="hs-card h-100">
+      <div class="hs-card-header"><i class="bi bi-bug"></i> Honeypot Interactions</div>
+      <div class="hs-card-body p-0">
+        <div class="table-responsive">
+          <table class="table hs-table mb-0">
+            <thead>
+              <tr><th>Time</th><th>Type</th><th>Path/Port</th><th>UA</th><th>Credentials</th></tr>
+            </thead>
+            <tbody>
+              {% for h in honeypot_hits %}
+              <tr>
+                <td class="font-mono small text-muted text-nowrap">{{ h.timestamp[:19] }}</td>
+                <td><span class="badge bg-warning text-dark">{{ h.honeypot_type }}</span></td>
+                <td class="font-mono small">{{ h.path or h.source_port or '—' }}</td>
+                <td class="small text-truncate" style="max-width:140px"
+                    title="{{ h.user_agent or '' }}">{{ (h.user_agent or '—')[:30] }}</td>
+                <td>
+                  {% if h.credentials_attempted and h.credentials_attempted != 'null' %}
+                  <span class="badge bg-danger">CAPTURED</span>
+                  {% else %}
+                  <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-3">No honeypot hits</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Full event log -->
+<div class="hs-card">
+  <div class="hs-card-header"><i class="bi bi-clock-history"></i> Full Event Log for {{ attacker.ip }}</div>
+  <div class="hs-card-body p-0">
+    <div class="table-responsive">
+      <table class="table hs-table mb-0">
+        <thead>
+          <tr><th>Timestamp</th><th>Type</th><th>Severity</th><th>User</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          {% for ev in events %}
+          <tr>
+            <td class="font-mono small text-muted text-nowrap">{{ ev.timestamp[:19] }}</td>
+            <td>{{ ev.event_type | replace('_',' ') }}</td>
+            <td><span class="badge sev-{{ ev.severity | lower }}">{{ ev.severity }}</span></td>
+            <td class="font-mono small">{{ ev.username or '—' }}</td>
+            <td class="small text-truncate" style="max-width:320px"
+                title="{{ ev.details or '' }}">{{ ev.details or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="text-center text-muted py-3">No events</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
